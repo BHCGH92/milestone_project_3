@@ -1,11 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clockers Dashboard</title>
-</head>
-<body>
+{% extends 'base.html' %} 
+
+{% block content %} 
     <h1>Welcome to Clockers.app</h1>
 
     <p>Your Current Status: 
@@ -47,7 +42,7 @@
     
     <hr>
 
-   <h2>Today's Log (Raw Entries)</h2>
+    <h2>Today's Log (Raw Entries)</h2>
 
     {% if raw_logs_today %}
         <table border="1" cellpadding="10" cellspacing="0">
@@ -75,5 +70,5 @@
     {% else %}
         <p>No clocking activity recorded today.</p>
     {% endif %}
-</body>
-</html>
+
+{% endblock content %}

@@ -1,9 +1,6 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Login to Clockers</title>
-</head>
-<body>
+{% extends 'base.html' %} 
+
+{% block content %} 
     <h2>Log In</h2>
     
     <form method="post">
@@ -13,5 +10,4 @@
     </form>
     
     <p><a href="{% url 'admin:index' %}">Admin Login</a></p>
-</body>
-</html>
+{% endblock content %}
