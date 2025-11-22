@@ -47,10 +47,33 @@
     
     <hr>
 
-    <h2>Today's Log (Raw Entries)</h2>
-    <p>No entries logged yet.</p>
+   <h2>Today's Log (Raw Entries)</h2>
 
-    <p><a href="{% url 'reports' %}">View Reports and History</a></p>
-
+    {% if raw_logs_today %}
+        <table border="1" cellpadding="10" cellspacing="0">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in raw_logs_today %}
+                <tr>
+                    <td>{{ entry.timestamp|date:"H:i:s" }}</td>
+                    <td>
+                        {% if entry.action_type == 'IN' %}Clock In
+                        {% elif entry.action_type == 'OUT' %}Clock Out
+                        {% elif entry.action_type == 'BREAK_START' %}Start Break
+                        {% elif entry.action_type == 'BREAK_END' %}End Break
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No clocking activity recorded today.</p>
+    {% endif %}
 </body>
 </html>
