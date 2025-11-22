@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clockers Dashboard</title>
+</head>
+<body>
+    <h1>Welcome to Clockers.app</h1>
+
+    <p>Your Current Status: 
+        <strong>
+            {% if current_status == 'IN' %}
+                Clocked In
+            {% elif current_status == 'BREAK_START' %}
+                On Break
+            {% else %}
+                Clocked Out
+            {% endif %}
+        </strong>
+    </p>
+    <p>Hours Worked Today: <strong>{{ hours_today }}</strong></p>
+
+    <form method="POST" action="{% url 'clock_action' %}">
+        {% csrf_token %} 
+        
+        <button type="submit" name="action" value="IN" 
+            {% if current_status != 'OUT' and current_status != 'BREAK_END' %}disabled{% endif %}>
+            Clock In
+        </button>
+
+        <button type="submit" name="action" value="OUT"
+            {% if current_status != 'IN' and current_status != 'BREAK_START' and current_status != 'BREAK_END' %}disabled{% endif %}>
+            Clock Out
+        </button>
+
+        <button type="submit" name="action" value="BREAK_START"
+            {% if current_status != 'IN' %}disabled{% endif %}>
+            Start Break
+        </button>
+
+        <button type="submit" name="action" value="BREAK_END"
+            {% if current_status != 'BREAK_START' %}disabled{% endif %}>
+            End Break
+        </button>
+    </form>
+    
+    <hr>
+
+    <h2>Today's Log (Raw Entries)</h2>
+    <p>No entries logged yet.</p>
+
+    <p><a href="{% url 'reports' %}">View Reports and History</a></p>
+
+</body>
+</html>
