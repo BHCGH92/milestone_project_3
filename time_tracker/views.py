@@ -8,6 +8,21 @@ from .models import TimeEntry
 from datetime import date, timedelta
 from .utils import calculate_time_period
 from django.contrib.auth import get_user_model
+from django.core.paginator import Paginator
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib import messages
+from django.contrib.auth import views as auth_views
+from django.contrib.auth.views import LoginView
+
+def custom_login(request):
+    """If user is authenticated, redirect them to dashboard. Otherwise, display the login form."""
+    if request.user.is_authenticated:
+        # User is logged in, redirect them to the dashboard
+        return redirect('dashboard')
+    else:
+        # User is NOT logged in, render the standard login page
+        # We call the LoginView's logic directly, ensuring the context is correct.
+        return LoginView.as_view(template_name='registration/login.html')(request)
 
 def get_user_status(user):
     """
@@ -29,13 +44,35 @@ def get_user_status(user):
 
 @login_required
 def dashboard(request):
+    user_status = get_user_status(request.user)
+    today = timezone.localdate()
     
-    user_status = get_user_status(request.user) 
+    # Calculate totals using ALL entries for the day (Logic remains separate)
+    results = calculate_time_period(request.user, today, today) 
+
+    # --- PAGINATION LOGIC START ---
     
-    #This will be expanded in later commits
+    # 1. Fetch all raw entries for today (QuerySet)
+    all_entries_today = TimeEntry.objects.filter(
+    user=request.user
+    ).order_by('-timestamp')
+
+    # 2. Set up Paginator
+    PAGINATE_BY = 10 
+    paginator = Paginator(all_entries_today, PAGINATE_BY)
+
+    # 3. Get the requested page number from the URL (?page=X)
+    page_number = request.GET.get('page')
+    
+    # 4. Get the specific page object (the slice of data)
+    page_obj = paginator.get_page(page_number) 
+    
+    # --- PAGINATION LOGIC END ---
+
     context = {
         'current_status': user_status, 
-        'hours_today': '0.00' # using placeholder for now
+        'hours_today': results['work_duration'], 
+        'raw_logs_today': page_obj, # <--- Passing the paginated object
     }
     return render(request, 'time_tracker/dashboard.html', context)
 
@@ -125,21 +162,21 @@ def reports_view(request):
     }
     return render(request, 'time_tracker/reports.html', context)
 
-@login_required
-def dashboard(request):
-    user_status = get_user_status(request.user)
-    
-    # --- Integration Start ---
-    today = timezone.localdate() # Get today's date
-    
-    # We pass the same date for start and end to calculate today's hours
-    results = calculate_time_period(request.user, today, today) 
-    
-    # --- Integration End ---
-    
-    context = {
-        'current_status': user_status, 
-        'hours_today': results['work_duration'], 
-        'raw_logs_today': results['raw_entries']
-    }
-    return render(request, 'time_tracker/dashboard.html', context)
+def register_user(request):
+    """Handles user registration (sign-up)."""
+    if request.method == 'POST':
+        # If the form is submitted (POST request)
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            # Save the new user and hash the password
+            user = form.save() 
+            # Send a success message
+            messages.success(request, f'Account created for {user.username}. You can now log in.')
+            # Redirect to the login page
+            return redirect('login') 
+    else:
+        # If the page is just being loaded (GET request)
+        form = UserCreationForm()
+        
+    context = {'form': form}
+    return render(request, 'registration/register.html', context)

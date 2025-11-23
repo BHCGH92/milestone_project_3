@@ -68,6 +68,7 @@ html, body {
 
 .table-primary-header th {
     background-color: var(--color-primary) !important; 
+    color: var(--text-primary) !important;
     border-color: var(--color-primary) !important;
 }
 
@@ -132,6 +133,54 @@ html, body {
 .footerbackground {
     color: var(--text-primary);
     background: var(--background-elevated);
+}
+
+
+/*Table Nav*/
+.page-link, .page-link:hover, .page-link:focus {
+    color: var(--text-secondary) !important;
+    background-color: var(--background-primary) !important;
+    border-color: var(--border-medium) !important;
+}
+.page-item.active .page-link {
+    /* Style for the current page button */
+    background-color: var(--color-primary) !important;
+    border-color: var(--color-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+/*Login Page*/
+
+.custom-login-card {
+    background-color: var(--background-elevated) !important; 
+    color: var(--text-primary); 
+    border: 1px solid var(--border-medium);
+}
+
+.custom-login-card input[type="text"],
+.custom-login-card input[type="password"] {
+    background-color: var(--surface) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-light);
+}
+
+.btn-primary-custom {
+    background-color: var(--color-primary) !important; 
+    border-color: var(--color-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+.btn-primary-custom:hover {
+    background-color: var(--color-primary-dark) !important;
+    border-color: var(--color-primary-dark) !important;
+}
+
+a {
+    color: var(--color-primary-light);
+}
+
+a:hover {
+    color: var(--color-primary);
 }
 
 /*Media Query*/
