@@ -1,53 +1,54 @@
 {% extends 'base.html' %} 
 
 {% block content %} 
-    <h1>Welcome to Clockers.app</h1>
+    <span class="navbar-text">
+        <h1>Welcome, <strong class="light-accent">{{ user.username }}</strong></h1>
+    </span>
 
     <p>Your Current Status: 
-        <strong>
-            {% if current_status == 'IN' %}
-                Clocked In
-            {% elif current_status == 'BREAK_START' %}
-                On Break
-            {% else %}
-                Clocked Out
-            {% endif %}
-        </strong>
+    <strong>
+        {% if current_status == 'IN' %}
+            Clocked In
+        {% elif current_status == 'BREAK_START' %}
+            On Break
+        {% else %}
+            Clocked Out
+        {% endif %}
+    </strong>
     </p>
-    <p>Hours Worked Today: <strong>{{ hours_today }}</strong></p>
-
+    <p>Hours Worked Today: <strong class="light-accent">{{ hours_today }}</strong></p>
+    <div class="clocking-buttons-wrapper">
     <form method="POST" action="{% url 'clock_action' %}">
         {% csrf_token %} 
         
-        <button type="submit" name="action" value="IN" 
-            {% if current_status != 'OUT' and current_status != 'BREAK_END' %}disabled{% endif %}>
-            Clock In
+        <button class="btn btn-primary" type="submit" name="action" value="IN" 
+            {% if current_status != 'OUT' %}disabled{% endif %}> Clock In
         </button>
 
-        <button type="submit" name="action" value="OUT"
-            {% if current_status != 'IN' and current_status != 'BREAK_START' and current_status != 'BREAK_END' %}disabled{% endif %}>
-            Clock Out
+        <button class="btn btn-primary" type="submit" name="action" value="OUT"
+            {% if current_status != 'IN' and current_status != 'BREAK_START' %}disabled{% endif %}> Clock Out
         </button>
 
-        <button type="submit" name="action" value="BREAK_START"
+        <button class="btn btn-primary" type="submit" name="action" value="BREAK_START"
             {% if current_status != 'IN' %}disabled{% endif %}>
             Start Break
         </button>
 
-        <button type="submit" name="action" value="BREAK_END"
+        <button class="btn btn-primary" type="submit" name="action" value="BREAK_END"
             {% if current_status != 'BREAK_START' %}disabled{% endif %}>
             End Break
         </button>
     </form>
-    
-    <hr>
-
-    <h2>Today's Log (Raw Entries)</h2>
-
+    </div>
+    <hr class = "hr-custom-width">
+    <div class="mb-4">
+    <h2>Today's Log</h2>
+    </div>    
     {% if raw_logs_today %}
-        <table border="1" cellpadding="10" cellspacing="0">
-            <thead>
+        <table class="table table-striped table-hover table-bordered">
+            <thead class="table-dark">
                 <tr>
+                    <th>User</th>
                     <th>Time</th>
                     <th>Action</th>
                 </tr>
@@ -55,6 +56,7 @@
             <tbody>
                 {% for entry in raw_logs_today %}
                 <tr>
+                    <td>{{ entry.user.username }}</td>
                     <td>{{ entry.timestamp|date:"H:i:s" }}</td>
                     <td>
                         {% if entry.action_type == 'IN' %}Clock In

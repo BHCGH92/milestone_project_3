@@ -11,20 +11,21 @@ from django.contrib.auth import get_user_model
 
 def get_user_status(user):
     """
-    Retrieves the action_type of the user's most recent time entry.
-    This defines the user's current status (IN, OUT, BREAK_START etc.).
+    Retrieves the action_type of the user's single most recent time entry 
+    and translates 'BREAK_END' into 'IN'.
     """
-    # 1. Filters entries for the current user.
-    # 2. Orders them by timestamp in descending order (newest first).
-    # 3. .first() retrieves only the single, most recent entry.
     last_entry = TimeEntry.objects.filter(user=user).order_by('-timestamp').first()
 
-    # If the user has no entries, out will be the default
     if not last_entry:
-        return 'OUT'
+        return 'OUT'  # Default state if no entries exist
     
-    # If it's not out, it will be the last status that was used.
-    return last_entry.action_type
+    # --- CRITICAL NEW LOGIC ---
+    last_action = last_entry.action_type
+    
+    if last_action == 'BREAK_END':
+        return 'IN' # User is back from break and actively working
+    
+    return last_action
 
 @login_required
 def dashboard(request):
@@ -40,24 +41,18 @@ def dashboard(request):
 
 @login_required
 def clock_action(request):
-
-    """
-    Handles POST requests from clocking buttons and enforces business rules.
-    """
     if request.method == 'POST':
         action_type = request.POST.get('action') 
-        user_status = get_user_status(request.user)
+        user_status = get_user_status(request.user) 
         
         is_valid = False
         
-        # --- Business Logic Validation ---
-        
-        # 1. CLOCK IN: Allowed if user is currently OUT or has ended a break
-        if action_type == 'IN' and user_status in ['OUT', 'BREAK_END']:
+            # 1. CLOCK IN: Only allowed if user is currently OUT.
+        if action_type == 'IN' and user_status == 'OUT': # <-- SIMPLIFIED: Only allow 'OUT'
             is_valid = True
             
-        # 2. CLOCK OUT: Allowed if user is currently IN or on a break.
-        elif action_type == 'OUT' and user_status in ['IN', 'BREAK_START', 'BREAK_END']:
+        # 2. CLOCK OUT: Allowed if user is currently IN or on a BREAK
+        elif action_type == 'OUT' and user_status in ['IN', 'BREAK_START']: # <-- REMOVE 'BREAK_END' here
             is_valid = True
             
         # 3. START BREAK: Allowed only if user is IN
@@ -82,9 +77,6 @@ def clock_action(request):
 User = get_user_model() 
 
 @login_required
-
-
-
 def reports_view(request):
     # Set default date range to the last 7 days ending today
     today = timezone.localdate()
