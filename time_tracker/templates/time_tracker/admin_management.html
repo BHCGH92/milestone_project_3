@@ -1,0 +1,113 @@
+{% extends 'base.html' %} 
+
+{% block content %}
+    <h1 class="mb-4">Admin User Management</h1>
+    <div class="card p-4 mb-4 custom-login-card shadow-lg">
+        <h3 class="card-title accent">Select User</h3>
+        <form method="GET" action="{% url 'admin_user_management' %}" class="row g-3 align-items-end">
+            <div class="col-md-6">
+                <label for="user_id" class="form-label">Manage User:</label>
+                <select id="user_id" name="user_id" class="form-select custom-select-dark">
+                    <option value="">-- Select a User --</option>
+                    {% for user in all_users %}
+                        <option value="{{ user.id }}" {% if target_user and user.id == target_user.id %}selected{% endif %}>
+                            {{ user.username }} 
+                            {% if user.is_staff %}(STAFF){% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3 d-grid">
+                <button type="submit" class="btn btn-primary-custom">Load User</button>
+            </div>
+        </form>
+
+        {% if target_user %}
+        <div class="mt-4 border-top pt-3">
+            <h4>Role Management for: {{ target_user.username }}</h4>
+            <p>Current Status: 
+                <span class="badge {% if target_user.is_staff %}bg-danger{% else %}bg-success{% endif %}">
+                    {% if target_user.is_staff %}STAFF (Admin){% else %}STANDARD USER{% endif %}
+                </span>
+            </p>
+            <form method="POST" action="{% url 'admin_user_management' %}" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="target_user_id" value="{{ target_user.id }}">
+                <input type="hidden" name="role_action" value="toggle_staff">
+                <button type="submit" class="btn btn-sm {% if target_user.is_staff %}btn-warning{% else %}btn-success{% endif %}">
+                    {% if target_user.is_staff %}Demote to Standard{% else %}Promote to Staff{% endif %}
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+    {% if target_user %}
+    <div class="card p-4 mb-4 custom-login-card shadow-lg">
+        <h3 class="card-title accent">Add Manual Entry for {{ target_user.username }}</h3>
+        <form method="POST" action="{% url 'admin_user_management' %}" class="row g-3">
+            {% csrf_token %}
+            <input type="hidden" name="target_user_id" value="{{ target_user.id }}">
+            
+            <div class="col-md-3">{{ add_form.date.label_tag }} {{ add_form.date }}</div>
+            <div class="col-md-3">{{ add_form.time.label_tag }} {{ add_form.time }}</div>
+            <div class="col-md-3">{{ add_form.action_type.label_tag }} {{ add_form.action_type }}</div>
+            <div class="col-md-3 d-grid align-self-end">
+                <button type="submit" class="btn btn-info text-dark">Add Entry</button>
+            </div>
+        </form>
+    </div>
+    <h3 class="mt-4" id="report-results">Time Entries for {{ target_user.username }}</h3>
+    
+    {% if user_entries %}
+        <div class="table-responsive mt-3">
+            <table class="table table-striped table-hover table-bordered table-sm">
+                <thead class="table-primary-header"> 
+                    <tr>
+                        <th class="text-nowrap-col">ID</th>
+                        <th class="text-nowrap-col">Date</th>
+                        <th class="text-nowrap-col">Time</th>
+                        <th class="text-nowrap-col">Action</th>
+                        <th class="text-nowrap-col">Delete</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in user_entries %}
+                    <tr>
+                        <td class="text-nowrap-col">{{ entry.id }}</td>
+                        <td class="text-nowrap-col">{{ entry.date_only|date:"Y-m-d" }}</td>
+                        <td class="text-nowrap-col">{{ entry.timestamp|date:"H:i:s" }}</td>
+                        <td class="text-nowrap-col">
+                            <span class="badge 
+                                {% if entry.action_type == 'IN' %}bg-success{% elif entry.action_type == 'OUT' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                                {{ entry.get_action_type_display }}
+                            </span>
+                        </td>
+                        <td class="text-nowrap-col">
+                            <form method="POST" action="{% url 'admin_delete_entry' entry.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-danger" 
+                                        onclick="return confirm('Confirm deletion of entry ID {{ entry.id }}?');">
+                                    Delete
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination (Uses existing logic, assumes query_params is set) -->
+        {% if user_entries.has_other_pages %}
+            <!-- ... pagination links structure (using user_entries and query_params) ... -->
+        {% endif %}
+    
+    {% else %}
+        <p class="alert alert-info">No time entries found for this user.</p>
+    {% endif %}
+
+    {% endif %} <!-- End of if target_user -->
+
+    <p class="mt-4"><a href="{% url 'dashboard' %}">Back to Dashboard</a></p>
+
+{% endblock content %}

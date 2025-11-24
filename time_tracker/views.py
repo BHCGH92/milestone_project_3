@@ -14,6 +14,11 @@ from django.contrib import messages
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.views import LoginView
 from urllib.parse import urlencode
+from django.urls import reverse
+from datetime import datetime
+from .forms import AdminTimeEntryForm
+from django.core.exceptions import PermissionDenied
+from django.shortcuts import render, redirect, get_object_or_404
 
 def custom_login(request):
     """If user is authenticated, redirect them to dashboard. Otherwise, display the login form."""
@@ -192,3 +197,86 @@ def register_user(request):
         
     context = {'form': form}
     return render(request, 'registration/register.html', context)
+
+@login_required
+def admin_delete_entry(request, entry_id):
+    if not request.user.is_staff:
+        raise PermissionDenied
+    
+    entry = get_object_or_404(TimeEntry, id=entry_id)
+    
+    if request.method == 'POST':
+        entry.delete()
+        messages.success(request, f"Entry {entry_id} for {entry.user.username} deleted.")
+        return redirect('admin_user_management') 
+        
+    messages.warning(request, "Deletion requires POST method.")
+    return redirect('admin_user_management')
+
+@login_required
+def admin_user_management(request):
+    if not request.user.is_staff:
+        raise PermissionDenied
+
+    target_user = None
+    user_id = request.GET.get('user_id')
+    
+    # --- ROLE/MANUAL ENTRY UPDATE LOGIC (POST request) ---
+    if request.method == 'POST':
+        user_id = request.POST.get('target_user_id')
+        role_action = request.POST.get('role_action')
+        
+        target_user_to_update = get_object_or_404(User, id=user_id)
+        
+        if role_action == 'toggle_staff':
+            target_user_to_update.is_staff = not target_user_to_update.is_staff
+            target_user_to_update.save()
+            messages.success(request, f"User {target_user_to_update.username} staff status updated.")
+            return redirect(f"{reverse('admin_user_management')}?user_id={user_id}") 
+            
+        form = AdminTimeEntryForm(request.POST)
+        if form.is_valid():
+            entry_date = form.cleaned_data['date']
+            entry_time = form.cleaned_data['time']
+            action_type = form.cleaned_data['action_type']
+            
+            entry_datetime = timezone.make_aware(datetime.combine(entry_date, entry_time))
+            
+            TimeEntry.objects.create(
+                user=target_user_to_update,
+                timestamp=entry_datetime,
+                action_type=action_type
+            )
+            messages.success(request, f"Entry added for {target_user_to_update.username} on {entry_date}.")
+            return redirect(f"{reverse('admin_user_management')}?user_id={user_id}")
+
+    # --- GET LOGIC (Display) ---
+    user_entries = None
+    query_params = ""
+    add_form = AdminTimeEntryForm()
+
+    for field_name in add_form.fields:
+        add_form.fields[field_name].widget.attrs.update({
+            'class': 'form-control'
+        })
+        
+    if user_id:
+        target_user = get_object_or_404(User, id=user_id)
+        
+        all_user_entries = TimeEntry.objects.filter(user=target_user).order_by('-timestamp')
+        
+        PAGINATE_BY = 15 
+        paginator = Paginator(all_user_entries, PAGINATE_BY)
+        page_number = request.GET.get('page')
+        user_entries = paginator.get_page(page_number) 
+        
+        query_params = urlencode({'user_id': target_user.id})
+        
+    context = {
+        'all_users': User.objects.all().order_by('username'),
+        'target_user': target_user,
+        'user_entries': user_entries,
+        'query_params': query_params,
+        'add_form': add_form,
+    }
+    return render(request, 'time_tracker/admin_management.html', context)

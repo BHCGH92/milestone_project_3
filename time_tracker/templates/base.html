@@ -28,8 +28,16 @@
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'reports' %}active{% endif %}" href="{% url 'reports' %}">Reports</a>
                     </li>
+                    {% if user.is_staff %}
+                    <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'admin_user_management' %}active{% endif %}" href="{% url 'admin_user_management' %}">
+                    Admin Tools
+                    </a>
+                    </li>
+                    {% endif %}
                     {% endif %}
                 </ul>
+                
                 
                 <ul class="navbar-nav">
                     {% if user.is_authenticated %}

@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="text-center my-5">
+    <h1 class="display-1 accent">403</h1>
+    <h2 class="mb-4">Permission Denied</h2>
+    <p class="lead">You do not have the necessary authorization to view this page (e.g., Staff Access Required).</p>
+    <a href="{% url 'dashboard' %}" class="btn btn-primary-custom mt-3">Go to Dashboard</a>
+</div>
+{% endblock content %}
