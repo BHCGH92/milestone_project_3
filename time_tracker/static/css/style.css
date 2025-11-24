@@ -149,7 +149,11 @@ html, body {
     color: var(--text-primary) !important;
 }
 
-/*Login Page*/
+.text-nowrap-col {
+    white-space: nowrap; 
+}
+
+/*Login & Register Page*/
 
 .custom-login-card {
     background-color: var(--background-elevated) !important; 
@@ -181,6 +185,30 @@ a {
 
 a:hover {
     color: var(--color-primary);
+}
+
+/* Reporting page */
+
+.custom-select-dark,
+.custom-input-dark,
+.custom-login-card input[type="text"], 
+.custom-login-card input[type="password"] {
+    background-color: var(--surface); 
+    color: var(--text-primary); 
+    border-color: var(--border-medium);
+}
+
+.custom-select-dark:focus,
+.custom-input-dark:focus,
+.custom-login-card input[type="text"]:focus, 
+.custom-login-card input[type="password"]:focus {
+    border-color: var(--color-primary); 
+    box-shadow: 0 0 0 0.25rem var(--color-primary-light);
+    color: var(--text-primary);
+}
+
+.custom-input-dark[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
 }
 
 /*Media Query*/

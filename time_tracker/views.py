@@ -13,6 +13,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.views import LoginView
+from urllib.parse import urlencode
 
 def custom_login(request):
     """If user is authenticated, redirect them to dashboard. Otherwise, display the login form."""
@@ -53,8 +54,10 @@ def dashboard(request):
     # --- PAGINATION LOGIC START ---
     
     # 1. Fetch all raw entries for today (QuerySet)
+    today = timezone.localdate()
     all_entries_today = TimeEntry.objects.filter(
-    user=request.user
+    user=request.user,
+    date_only=today
     ).order_by('-timestamp')
 
     # 2. Set up Paginator
@@ -115,50 +118,59 @@ User = get_user_model()
 
 @login_required
 def reports_view(request):
-    # Set default date range to the last 7 days ending today
     today = timezone.localdate()
     default_start_date = today - timedelta(days=7)
     date_from_str = request.GET.get('date_from')
     date_to_str = request.GET.get('date_to')
-    user_id_str = request.GET.get('user_id') # For Admin report filtering
+    user_id_str = request.GET.get('user_id')
 
-    # --- 1. Define User (Who is the report for?) ---
     target_user = request.user
     
-    # Allow Admins to select any user
     if request.user.is_staff and user_id_str:
         try:
             target_user = User.objects.get(id=user_id_str)
         except User.DoesNotExist:
-            pass # Default to current user if requested user is not found
+            pass
 
-    # --- 2. Define Date Range ---
     try:
-        # Parse dates from the form input, or use the default range
         date_from = date.fromisoformat(date_from_str) if date_from_str else default_start_date
         date_to = date.fromisoformat(date_to_str) if date_to_str else today
     except ValueError:
-        # Fallback if date format is invalid
         date_from = default_start_date
         date_to = today
 
-    # Ensure date_to is not before date_from
     if date_to < date_from:
         date_to = date_from
     
-    # --- 3. Calculate Report Data ---
-    # Call the calculation utility with the determined user and date range
     results = calculate_time_period(target_user, date_from, date_to)
 
+    all_report_entries = results['raw_entries'] 
+    
+    PAGINATE_BY = 10 
+    paginator = Paginator(all_report_entries, PAGINATE_BY)
+
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number) 
+    
+    query_params_dict = {
+        'date_from': date_from.isoformat(),
+        'date_to': date_to.isoformat(),
+    }
+    if request.user.is_staff and target_user.id != request.user.id:
+        query_params_dict['user_id'] = target_user.id
+        
+    query_params = urlencode(query_params_dict)
+
     context = {
-        'date_from': date_from.isoformat(), # Used to pre-fill the form fields
-        'date_to': date_to.isoformat(),     # Used to pre-fill the form fields
+        'date_from': date_from.isoformat(), 
+        'date_to': date_to.isoformat(),
         'target_user': target_user,
         'is_admin': request.user.is_staff,
         'users': User.objects.all().order_by('username') if request.user.is_staff else None,
         'total_work_time': results['work_duration'],
         'total_break_time': results['break_duration'],
-        'raw_entries': results['raw_entries'], # Raw data for detailed breakdown
+        'raw_entries': page_obj, 
+        'query_params': query_params,
     }
     return render(request, 'time_tracker/reports.html', context)
 
