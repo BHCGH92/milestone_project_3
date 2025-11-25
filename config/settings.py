@@ -19,9 +19,9 @@ SECRET_KEY = os.environ.get(
     'django-insecure-x_yt3mum79*w6ebd^3r$=k*rilt$67oten@rojba4*uu&4-*ym' # Local development fallback
 )
 
-# Set DEBUG using an environment variable, defaulting to False for production
-#DEBUG = os.environ.get('DEBUG', 'False') == 'True'
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+#When developing locally comment out above and uncomment out the below line.
+#DEBUG = True
 
 ALLOWED_HOSTS = ['.herokuapp.com', '127.0.0.1']
 
