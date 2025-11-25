@@ -20,7 +20,8 @@ SECRET_KEY = os.environ.get(
 )
 
 # Set DEBUG using an environment variable, defaulting to False for production
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+#DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+DEBUG = True
 
 ALLOWED_HOSTS = ['.herokuapp.com', '127.0.0.1']
 
@@ -125,6 +126,10 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     BASE_DIR / 'time_tracker' / 'static',
 ]
+
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # CRITICAL: Where collectstatic puts files for production serving
 STATIC_ROOT = BASE_DIR / 'staticfiles' # ADDED: REQUIRED for collectstatic
