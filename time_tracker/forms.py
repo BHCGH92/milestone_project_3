@@ -15,7 +15,6 @@ class AdminTimeEntryForm(forms.Form):
     class Meta:
         fields = ['date', 'time', 'action_type']
 
-
 class AdminTimeEntryForm(forms.Form):
     pass
 

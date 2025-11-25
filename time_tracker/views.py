@@ -306,7 +306,7 @@ def request_time_edit(request):
     context = {'form': form}
     return render(request, 'time_tracker/user_edit_request.html', context)
 
-MGMT_PAGINATE_BY = 15 # Reuse this variable
+MGMT_PAGINATE_BY = 15
 
 @login_required
 def admin_review_requests(request):
