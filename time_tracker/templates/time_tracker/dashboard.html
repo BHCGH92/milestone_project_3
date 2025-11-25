@@ -38,7 +38,23 @@
                 End Break
             </button>
         </form>
+        {% if user.is_staff and pending_request_count > 0 %}
+        <a href="{% url 'admin_review_requests' %}" class="text-decoration-none">
+                <div class="card bg-danger text-white mt-4 mb-4 shadow-sm position-relative">
+                    <div class="card-body d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title mb-0">ACTION REQUIRED!</h5>
+                            <p class="card-text">
+                                You have <strong>{{ pending_request_count }}</strong> time change request{% if pending_request_count > 1 %}s{% endif %} awaiting review.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        {% elif user.is_staff %}
+        {% endif %}
     </div>
+
     
     <hr class="hr-custom-width">
     <div class="mb-4">

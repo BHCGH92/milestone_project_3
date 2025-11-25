@@ -1,0 +1,53 @@
+{% extends 'base.html' %} 
+
+{% block content %}
+    <h1 class="mb-4">Pending Time Change Requests</h1>
+
+    {% if pending_requests %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover table-bordered table-sm">
+                <thead class="table-primary-header"> 
+                    <tr>
+                        <th>ID</th>
+                        <th>User</th>
+                        <th>Original Time</th>
+                        <th>Requested Time</th>
+                        <th>Reason</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in pending_requests %}
+                    <tr>
+                        <td>{{ req.id }}</td>
+                        <td>{{ req.original_entry.user.username }}</td>
+                        <td>{{ req.original_entry.timestamp|date:"Y-m-d H:i:s" }}</td>
+                        <td>{{ req.requested_timestamp|date:"Y-m-d H:i:s" }}</td>
+                        <td>{{ req.request_reason }}</td>
+                        <td>
+                            <!-- Form for accepting the change -->
+                            <form method="POST" action="{% url 'admin_process_request' req.id %}" class="d-inline me-2">
+                                {% csrf_token %}
+                                <button type="submit" name="action" value="accept" class="btn btn-sm btn-success">Accept</button>
+                            </form>
+                            <!-- Form for rejecting the change -->
+                            <form method="POST" action="{% url 'admin_process_request' req.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" name="action" value="reject" class="btn btn-sm btn-danger">Reject</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination would go here, based on pending_requests object -->
+
+    {% else %}
+        <p class="alert alert-info">No pending change requests found.</p>
+    {% endif %}
+
+    <p class="mt-4"><a href="{% url 'admin_user_management' %}">Back to Admin Tools</a></p>
+
+{% endblock content %}

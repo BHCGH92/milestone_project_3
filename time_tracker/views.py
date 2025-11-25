@@ -4,7 +4,7 @@ from django.shortcuts import render
 from django.shortcuts import render, redirect 
 from django.contrib.auth.decorators import login_required 
 from django.utils import timezone 
-from .models import TimeEntry
+from .models import TimeEntry, TimeEditRequest
 from datetime import date, timedelta
 from .utils import calculate_time_period
 from django.contrib.auth import get_user_model
@@ -16,9 +16,10 @@ from django.contrib.auth.views import LoginView
 from urllib.parse import urlencode
 from django.urls import reverse
 from datetime import datetime
-from .forms import AdminTimeEntryForm
+from .forms import AdminTimeEntryForm, UserEditRequestForm
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import render, redirect, get_object_or_404
+from django.db import transaction
 
 def custom_login(request):
     """If user is authenticated, redirect them to dashboard. Otherwise, display the login form."""
@@ -77,10 +78,15 @@ def dashboard(request):
     
     # --- PAGINATION LOGIC END ---
 
+    pending_request_count = 0
+    if request.user.is_staff:
+        pending_request_count = TimeEditRequest.objects.filter(status='PENDING').count()
+
     context = {
         'current_status': user_status, 
         'hours_today': results['work_duration'], 
         'raw_logs_today': page_obj, # <--- Passing the paginated object
+        'pending_request_count': pending_request_count,
     }
     return render(request, 'time_tracker/dashboard.html', context)
 
@@ -280,3 +286,72 @@ def admin_user_management(request):
         'add_form': add_form,
     }
     return render(request, 'time_tracker/admin_management.html', context)
+
+@login_required
+def request_time_edit(request):
+    if request.method == 'POST':
+        form = UserEditRequestForm(request.POST)
+        
+        if form.is_valid():
+            edit_request = form.save(commit=False)
+            edit_request.user = request.user
+            edit_request.status = 'PENDING'
+            edit_request.save()
+            messages.success(request, 'Time change request submitted successfully for review.')
+            return redirect('dashboard')
+    else:
+        form = UserEditRequestForm()
+        form.fields['original_entry'].queryset = TimeEntry.objects.filter(user=request.user).order_by('-timestamp')
+
+    context = {'form': form}
+    return render(request, 'time_tracker/user_edit_request.html', context)
+
+MGMT_PAGINATE_BY = 15 # Reuse this variable
+
+@login_required
+def admin_review_requests(request):
+    if not request.user.is_staff:
+        raise PermissionDenied
+        
+    # Fetch all PENDING requests
+    all_requests = TimeEditRequest.objects.filter(status='PENDING').order_by('requested_timestamp')
+    
+    paginator = Paginator(all_requests, MGMT_PAGINATE_BY)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'pending_requests': page_obj,
+    }
+    return render(request, 'time_tracker/admin_review_requests.html', context)
+
+@login_required
+def admin_process_request(request, request_id):
+    if not request.user.is_staff:
+        raise PermissionDenied
+        
+    edit_request = get_object_or_404(TimeEditRequest, id=request_id)
+    action = request.POST.get('action')
+    
+    if request.method == 'POST':
+        if action == 'accept':
+            with transaction.atomic():
+                original_entry = edit_request.original_entry
+                original_entry.timestamp = edit_request.requested_timestamp
+                original_entry.save()
+                
+                edit_request.status = 'ACCEPTED'
+                edit_request.admin_reviewer = request.user
+                edit_request.reviewed_at = timezone.now()
+                edit_request.save()
+                
+            messages.success(request, f"Entry {original_entry.id} accepted and updated.")
+            
+        elif action == 'reject':
+            edit_request.status = 'REJECTED'
+            edit_request.admin_reviewer = request.user
+            edit_request.reviewed_at = timezone.now()
+            edit_request.save()
+            messages.warning(request, f"Entry {edit_request.original_entry.id} rejected.")
+
+    return redirect('admin_review_requests')
