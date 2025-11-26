@@ -191,24 +191,41 @@ a:hover {
 
 .custom-select-dark,
 .custom-input-dark,
+.custom-input-dark[type="time"],
 .custom-login-card input[type="text"], 
 .custom-login-card input[type="password"] {
-    background-color: var(--surface); 
-    color: var(--text-primary); 
-    border-color: var(--border-medium);
+    background-color: var(--surface) !important; 
+    color: var(--text-primary) !important; 
+    border-color: var(--border-medium) !important;
 }
 
 .custom-select-dark:focus,
 .custom-input-dark:focus,
 .custom-login-card input[type="text"]:focus, 
 .custom-login-card input[type="password"]:focus {
-    border-color: var(--color-primary); 
-    box-shadow: 0 0 0 0.25rem var(--color-primary-light);
-    color: var(--text-primary);
+    border-color: var(--color-primary) !important; 
+    box-shadow: 0 0 0 0.25rem var(--color-primary-light) !important;
+    color: var(--text-primary) !important;
 }
 
 .custom-input-dark[type="date"]::-webkit-calendar-picker-indicator {
     filter: invert(1);
+}
+
+.custom-select-dark:focus,
+.custom-input-dark:focus {
+    background-color: var(--surface) !important; 
+    box-shadow: 0 0 0 0.25rem var(--color-primary-light) !important;
+    border-color: var(--color-primary) !important; 
+}
+
+.custom-select-dark:focus,
+.custom-input-dark:focus,
+.custom-login-card input[type="text"]:focus, 
+.custom-login-card input[type="password"]:focus {
+    background-color: var(--surface) !important; 
+    box-shadow: 0 0 0 0.25rem var(--color-primary-light) !important;
+    border-color: var(--color-primary) !important; 
 }
 
 /*Media Query*/

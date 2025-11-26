@@ -1,33 +1,37 @@
 from django import forms
 from .models import TimeEntry
 from .models import TimeEntry, TimeEditRequest
+from django.utils import timezone
 
+
+# --- 1. Admin Time Entry Form (Used for Manual Submission) ---
 class AdminTimeEntryForm(forms.Form):
-    # Use built-in model choices for validation and clarity
-    ACTION_CHOICES = TimeEntry.ACTION_CHOICES 
+    date = forms.DateField(
+        initial=timezone.localdate(),
+        widget=forms.DateInput(attrs={'class': 'form-control'}))
+        
+    time = forms.TimeField(
+        widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}))
+        
+    action_type = forms.ChoiceField(
+        choices=TimeEntry.ACTION_CHOICES, 
+        widget=forms.Select(attrs={'class': 'form-select form-control'}))
 
-    # Target user is hidden or handled by the view, but we need the data fields
-    
-    date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}))
-    time = forms.TimeField(widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}))
-    action_type = forms.ChoiceField(choices=ACTION_CHOICES, widget=forms.Select(attrs={'class': 'form-select'}))
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-    class Meta:
-        fields = ['date', 'time', 'action_type']
-
-class AdminTimeEntryForm(forms.Form):
-    pass
 
 class UserEditRequestForm(forms.ModelForm):
     original_entry = forms.ModelChoiceField(
-        queryset=TimeEntry.objects.all(), 
+        queryset=TimeEntry.objects.all(),
         widget=forms.Select(attrs={'class': 'form-control'}),
         label='Select Entry to Modify'
     )
-    
     requested_timestamp = forms.DateTimeField(
         widget=forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
-        label='Requested Date & Time (New Value)'
+        label='Requested New Time & Date', 
+        initial=timezone.now(),
+        required=True
     )
     
     class Meta:

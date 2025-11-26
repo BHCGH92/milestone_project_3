@@ -227,45 +227,68 @@ def admin_user_management(request):
     target_user = None
     user_id = request.GET.get('user_id')
     
-    # --- ROLE/MANUAL ENTRY UPDATE LOGIC (POST request) ---
+    add_form = AdminTimeEntryForm() 
+    
+    # --- POST LOGIC ---
     if request.method == 'POST':
         user_id = request.POST.get('target_user_id')
-        role_action = request.POST.get('role_action')
+        role_action = request.POST.get('role_action') 
+        
+        if not user_id:
+             messages.error(request, "Target user ID is missing from the submission.")
+             return redirect('admin_user_management')
         
         target_user_to_update = get_object_or_404(User, id=user_id)
         
         if role_action == 'toggle_staff':
+            # Handle Role Toggle
             target_user_to_update.is_staff = not target_user_to_update.is_staff
             target_user_to_update.save()
             messages.success(request, f"User {target_user_to_update.username} staff status updated.")
-            return redirect(f"{reverse('admin_user_management')}?user_id={user_id}") 
+            return redirect(f"{reverse('admin_user_management')}?user_id={user_id}")
             
-        form = AdminTimeEntryForm(request.POST)
-        if form.is_valid():
-            entry_date = form.cleaned_data['date']
-            entry_time = form.cleaned_data['time']
-            action_type = form.cleaned_data['action_type']
+    
+        if 'date' in request.POST:
+            add_form = AdminTimeEntryForm(request.POST) 
             
-            entry_datetime = timezone.make_aware(datetime.combine(entry_date, entry_time))
+            if add_form.is_valid():
+                entry_date = add_form.cleaned_data['date']
+                entry_time = add_form.cleaned_data['time']
+                action_type = add_form.cleaned_data['action_type']
+                
+                entry_datetime = timezone.make_aware(datetime.combine(entry_date, entry_time))
+                
+                TimeEntry.objects.create(
+                    user=target_user_to_update,
+                    timestamp=entry_datetime,
+                    action_type=action_type
+                )
+                messages.success(request, f"Entry added for {target_user_to_update.username} on {entry_date}.")
+                return redirect(f"{reverse('admin_user_management')}?user_id={user_id}")
             
-            TimeEntry.objects.create(
-                user=target_user_to_update,
-                timestamp=entry_datetime,
-                action_type=action_type
-            )
-            messages.success(request, f"Entry added for {target_user_to_update.username} on {entry_date}.")
+        else:
+            messages.error(request, "Invalid form submission detected.")
             return redirect(f"{reverse('admin_user_management')}?user_id={user_id}")
 
-    # --- GET LOGIC (Display) ---
+
     user_entries = None
     query_params = ""
-    add_form = AdminTimeEntryForm()
-
+    
+    add_form = AdminTimeEntryForm() 
+    
     for field_name in add_form.fields:
         add_form.fields[field_name].widget.attrs.update({
             'class': 'form-control'
         })
-        
+    
+    user_id = request.GET.get('user_id')
+    if not user_id:
+        first_user = User.objects.all().order_by('id').first()
+        if first_user:
+            user_id = str(first_user.id)
+        else:
+            user_id = str(request.user.id) 
+
     if user_id:
         target_user = get_object_or_404(User, id=user_id)
         
