@@ -15,8 +15,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Use environment variable for Secret Key and fall back to local if not found
 SECRET_KEY = os.environ.get(
-    'SECRET_KEY', 
-    'django-insecure-x_yt3mum79*w6ebd^3r$=k*rilt$67oten@rojba4*uu&4-*ym' # Local development fallback
+    'SECRET_KEY'
 )
 
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
